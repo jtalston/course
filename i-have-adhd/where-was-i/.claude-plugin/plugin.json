@@ -1,0 +1,10 @@
+{
+  "name": "where-was-i",
+  "description": "Drop a breadcrumb before you get pulled away, and pick the thread back up when you return. Rescue for interrupted work.",
+  "version": "1.0.0",
+  "author": {
+    "name": "Jamil Alston",
+    "email": "jamil.alston@gmail.com"
+  },
+  "keywords": ["context", "adhd", "interruptions", "recovery"]
+}

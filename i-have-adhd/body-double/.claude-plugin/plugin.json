@@ -1,0 +1,10 @@
+{
+  "name": "body-double",
+  "description": "A calm co-working companion that keeps you gently on task without nagging. Body-doubling for coding sessions.",
+  "version": "1.0.0",
+  "author": {
+    "name": "Jamil Alston",
+    "email": "jamil.alston@gmail.com"
+  },
+  "keywords": ["body-double", "adhd", "accountability", "coworking"]
+}

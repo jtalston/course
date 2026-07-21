@@ -1,0 +1,45 @@
+{
+  "name": "i-have-adhd",
+  "owner": {
+    "name": "Jamil Alston",
+    "email": "jamil.alston@gmail.com"
+  },
+  "metadata": {
+    "description": "A tiny toolkit for the ADHD brain working inside Claude Code: break tasks down, capture stray thoughts without losing your place, and recover context after a distraction.",
+    "version": "1.0.0"
+  },
+  "plugins": [
+    {
+      "name": "focus-mode",
+      "source": "./focus-mode",
+      "description": "Turn a vague, overwhelming task into one tiny next step. Time-box it, and park distractions instead of chasing them.",
+      "version": "1.0.0",
+      "category": "productivity",
+      "keywords": ["focus", "adhd", "pomodoro", "task-breakdown"]
+    },
+    {
+      "name": "brain-dump",
+      "source": "./brain-dump",
+      "description": "Empty a racing mind onto the page, then let Claude sort the noise into real tasks, notes, and things to ignore.",
+      "version": "1.0.0",
+      "category": "productivity",
+      "keywords": ["capture", "adhd", "notes", "triage"]
+    },
+    {
+      "name": "where-was-i",
+      "source": "./where-was-i",
+      "description": "Drop a breadcrumb before you get pulled away, and pick the thread back up when you return. Rescue for interrupted work.",
+      "version": "1.0.0",
+      "category": "productivity",
+      "keywords": ["context", "adhd", "interruptions", "recovery"]
+    },
+    {
+      "name": "body-double",
+      "source": "./body-double",
+      "description": "A calm co-working companion that keeps you gently on task without nagging. Body-doubling for coding sessions.",
+      "version": "1.0.0",
+      "category": "productivity",
+      "keywords": ["body-double", "adhd", "accountability", "coworking"]
+    }
+  ]
+}

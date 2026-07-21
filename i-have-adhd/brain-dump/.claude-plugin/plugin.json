@@ -1,0 +1,10 @@
+{
+  "name": "brain-dump",
+  "description": "Empty a racing mind onto the page, then let Claude sort the noise into real tasks, notes, and things to ignore.",
+  "version": "1.0.0",
+  "author": {
+    "name": "Jamil Alston",
+    "email": "jamil.alston@gmail.com"
+  },
+  "keywords": ["capture", "adhd", "notes", "triage"]
+}

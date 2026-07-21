@@ -1,0 +1,10 @@
+{
+  "name": "focus-mode",
+  "description": "Turn a vague, overwhelming task into one tiny next step. Time-box it, and park distractions instead of chasing them.",
+  "version": "1.0.0",
+  "author": {
+    "name": "Jamil Alston",
+    "email": "jamil.alston@gmail.com"
+  },
+  "keywords": ["focus", "adhd", "pomodoro", "task-breakdown"]
+}
