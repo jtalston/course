@@ -5,7 +5,8 @@ Script format, one turn per line:
     B: Right, and that's where most people...
 
 Engine:
-- ElevenLabs Text-to-Dialogue when ELEVENLABS_API_KEY is set. One call per
+- ElevenLabs Text-to-Dialogue (streaming endpoint, so proxies with short idle
+  timeouts don't cut off a 2-minute render) when ELEVENLABS_API_KEY is set. One call per
   batch, not isolated lines glued with silence (isolated lines sound robotic).
   Defaults: voices Liam + Jessica (energetic; calm voices read as flat),
   stability 0.3, model eleven_v3. Override with CLAUDEMY_VOICE_A,
@@ -58,7 +59,7 @@ def elevenlabs_parts(turns, tmp, key):
         body = {"inputs": [{"text": said, "voice_id": voices[who]} for who, said in batch],
                 "model_id": "eleven_v3", "settings": {"stability": stability}, "seed": 42}
         req = urllib.request.Request(
-            "https://api.elevenlabs.io/v1/text-to-dialogue", data=json.dumps(body).encode(),
+            "https://api.elevenlabs.io/v1/text-to-dialogue/stream", data=json.dumps(body).encode(),
             headers={"xi-api-key": key, "Content-Type": "application/json", "Accept": "audio/mpeg"})
         part = tmp / f"part{i}.mp3"
         try:

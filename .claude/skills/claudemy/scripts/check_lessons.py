@@ -80,7 +80,10 @@ def check_card(text, urls):
     # inside one is missing, a demand phrase inside one is not a fail.
     body = re.sub(r"<!--.*?-->", "", text, flags=re.S)
     problems = [f"card missing {s!r}" for s in CARD_SECTIONS if s not in body]
-    problems += [f"card: {m}" for m in banned(body)]
+    # Command-line flags (git push --force-with-lease) are code, not prose dashes:
+    # the dash rule skips fenced blocks and `code spans`, nothing else.
+    prose = re.sub(r"```.*?```|`[^`\n]*`", "", body, flags=re.S)
+    problems += [f"card: {m}" for m in banned(prose)]
     cited = cited_urls(body)
     if not cited:
         problems.append("card cites no source")
