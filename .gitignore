@@ -3,3 +3,4 @@
 /claudemy/
 # Local secrets written by `elevenlabs onboard`
 /.env
+__pycache__/
