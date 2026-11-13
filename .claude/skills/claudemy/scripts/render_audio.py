@@ -16,6 +16,10 @@ Engine:
   are dropped, since `say` would read them aloud.
 Both paths finish with the same warm EQ and loudness pass in ffmpeg.
 
+Speed: CLAUDEMY_SPEED (for example 1.25), or "audio_speed" in the class's
+sources.json, plays the lesson faster or slower at the same pitch (ffmpeg
+atempo). The env var wins. Default 1.0.
+
 Usage: python3 render_audio.py <script.txt> <out.mp3>
 """
 import json, os, re, shutil, subprocess, sys, tempfile, urllib.error, urllib.request
@@ -85,11 +89,28 @@ def say_parts(turns, tmp):
     return parts
 
 
-def stitch(parts, tmp, out_path):
+def audio_speed(script_path):
+    """Playback speed for this class: env var first, then sources.json in the workspace
+    (<ws>/class/NN-handle/script.txt), else 1.0. atempo keeps pitch, so voices stay natural."""
+    raw = os.environ.get("CLAUDEMY_SPEED")
+    if not raw:
+        sources = Path(script_path).resolve().parents[2] / "sources.json"
+        try:
+            raw = json.loads(sources.read_text(encoding="utf-8")).get("audio_speed")
+        except (OSError, ValueError, IndexError):
+            raw = None
+    speed = float(raw or 1.0)
+    if not 0.5 <= speed <= 2.0:
+        sys.exit(f"audio speed {speed} is outside 0.5 to 2.0")
+    return speed
+
+
+def stitch(parts, tmp, out_path, speed=1.0):
     listing = tmp / "list.txt"
     listing.write_text("".join(f"file '{p}'\n" for p in parts))
+    af = POLISH_AF if speed == 1.0 else f"atempo={speed},{POLISH_AF}"
     subprocess.run(["ffmpeg", "-y", "-loglevel", "error", "-f", "concat", "-safe", "0", "-i", str(listing),
-                    "-af", POLISH_AF, "-ar", "44100", "-b:a", "128k", str(out_path)], check=True)
+                    "-af", af, "-ar", "44100", "-b:a", "128k", str(out_path)], check=True)
 
 
 def main(script_path, out_path):
@@ -102,9 +123,11 @@ def main(script_path, out_path):
     with tempfile.TemporaryDirectory() as tmp:
         tmp = Path(tmp)
         parts = elevenlabs_parts(turns, tmp, key) if key else say_parts(turns, tmp)
-        stitch(parts, tmp, out_path)
+        speed = audio_speed(script_path)
+        stitch(parts, tmp, out_path, speed)
     length = stamp_card(Path(script_path).with_name("card.md"), out_path)
-    print(f"wrote {out_path} ({length}) from {len(turns)} turns via {'ElevenLabs' if key else 'macOS say'}")
+    pace = "" if speed == 1.0 else f" at {speed}x"
+    print(f"wrote {out_path} ({length}{pace}) from {len(turns)} turns via {'ElevenLabs' if key else 'macOS say'}")
 
 
 def stamp_card(card, mp3):

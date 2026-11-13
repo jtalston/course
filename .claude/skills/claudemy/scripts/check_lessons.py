@@ -62,6 +62,42 @@ def banned(text):
     return found
 
 
+# ASD-STE100 mode (sources.json "style": "ste100"; see references/ste100.md).
+STE_PROC, STE_DESC = 20, 25
+CONTRACTION = re.compile(r"\b\w+'(s|re|ve|ll|d|t|m)\b", re.I)
+ING_OK = {"thing", "things", "nothing", "something", "anything", "everything", "string", "strings",
+          "during", "bring", "single", "king", "spring", "ring", "wing", "morning", "evening",
+          "missing", "pending", "existing", "following", "remaining", "working"}
+PASSIVE = re.compile(r"\b(is|are|was|were|be|been|being)\s+(\w+ed|written|done|made|lost|kept|shown|given|taken|seen|known|built|set)\b", re.I)
+
+
+def sentences(text):
+    """Prose sentences: code, urls and markdown markup removed; a list item or line break ends one."""
+    text = re.sub(r"```.*?```|`[^`\n]*`", "CODE", text, flags=re.S)
+    text = URL.sub("URL", text)
+    text = re.sub(r"[*_#>]+", " ", text)
+    out = []
+    for line in text.splitlines():
+        line = re.sub(r"^\s*(?:[-+]|\d+\.)\s+", "", line)
+        out += [s.strip() for s in re.split(r"(?<=[.!?:])\s+", line) if len(s.split()) > 1]
+    return out
+
+
+def ste_problems(text, limit, where):
+    long = [s for s in sentences(text) if len(s.split()) > limit]
+    return [f"STE {where}: {len(s.split())} words, max {limit}: {s[:60]!r}" for s in long]
+
+
+def ste_warnings(text):
+    text = URL.sub("", re.sub(r"```.*?```|`[^`\n]*`", "", text, flags=re.S))
+    ing = sorted({w.lower() for w in re.findall(r"\b[A-Za-z]+ing\b", text)} - ING_OK)
+    warn = [f"-ing words: {', '.join(ing[:8])}"] if ing else []
+    passive = PASSIVE.findall(text)
+    if passive:
+        warn.append(f"possible passive: {', '.join(' '.join(p) for p in passive[:4])}")
+    return warn
+
+
 def check_script(text):
     lines = [l for l in text.splitlines() if l.strip()]
     bad = [l for l in lines if not re.match(r"^[AB]: \S", l)]
@@ -72,6 +108,29 @@ def check_script(text):
     if len(TAG.findall(text)) > TAGS_MAX:
         problems.append(f"{len(TAG.findall(text))} audio tags, max {TAGS_MAX}")
     return problems + [f"script: {m}" for m in banned(text)], words
+
+
+def check_script_ste(text):
+    spoken = re.sub(r"^[AB]:\s*", "", text, flags=re.M)
+    problems = ste_problems(spoken, STE_DESC, "script")
+    if TAG.search(text):
+        problems.append("STE script: audio tags are not used in STE mode")
+    if CONTRACTION.search(spoken):
+        problems.append(f"STE script: contractions ({', '.join([m.group(0) for m in CONTRACTION.finditer(spoken)][:5])})")
+    return problems
+
+
+def check_card_ste(text):
+    body = re.sub(r"<!--.*?-->", "", text, flags=re.S)
+    m = re.search(r"\*\*Try it\*\*(.*?)\*\*Rule to keep\*\*", body, flags=re.S)
+    tryit = m.group(1) if m else ""
+    rest = body.replace(tryit, "") if tryit else body
+    rest = re.sub(r"^\*\*Go deeper.*", "", rest, flags=re.S | re.M)
+    problems = ste_problems(tryit, STE_PROC, "Try it") + ste_problems(rest, STE_DESC, "card")
+    prose = re.sub(r"```.*?```|`[^`\n]*`", "", body, flags=re.S)
+    if CONTRACTION.search(prose):
+        problems.append(f"STE card: contractions ({', '.join([m.group(0) for m in CONTRACTION.finditer(prose)][:5])})")
+    return problems
 
 
 def check_card(text, urls):
@@ -111,10 +170,19 @@ def check_plan(ws, urls):
     return bool(missing)
 
 
+def class_style(ws):
+    try:
+        import json
+        return json.loads((ws / "sources.json").read_text(encoding="utf-8")).get("style", "")
+    except (OSError, ValueError):
+        return ""
+
+
 def main(ws, folders):
     # A url or name the console can't show must not crash the report.
     sys.stdout.reconfigure(errors="replace")
     urls = scraped_urls(ws)
+    ste = class_style(ws).lower() == "ste100"
     failed = check_plan(ws, urls)
     for d in folders:
         script, card = d / "script.txt", d / "card.md"
@@ -122,11 +190,18 @@ def main(ws, folders):
             print(f"FAIL {d.name}: missing script.txt or card.md")
             failed += 1
             continue
-        problems, words = check_script(script.read_text(encoding="utf-8"))
-        problems += check_card(card.read_text(encoding="utf-8"), urls)
-        print(f"{'FAIL' if problems else 'ok  '} {d.name} ({words} words)")
+        s_text, c_text = script.read_text(encoding="utf-8"), card.read_text(encoding="utf-8")
+        problems, words = check_script(s_text)
+        problems += check_card(c_text, urls)
+        warnings = []
+        if ste:
+            problems += check_script_ste(s_text) + check_card_ste(c_text)
+            warnings = ste_warnings(s_text + "\n" + c_text)
+        print(f"{'FAIL' if problems else 'ok  '} {d.name} ({words} words{', STE' if ste else ''})")
         for p in problems:
             print(f"     {p}")
+        for w in warnings:
+            print(f"     warn {w}")
         failed += bool(problems)
     sys.exit(1 if failed else 0)
 
